@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+
+<TextView xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/roomNumberListing"
+    android:layout_width="wrap_content"
+    android:layout_height="wrap_content"
+    android:textSize="18sp"
+    android:drawablePadding="30dp"
+    android:paddingStart="30dp"
+    android:drawableStart="@mipmap/ic_launcher"
+    android:textColor="#363436"
+    android:fontFamily="sans-serif-medium"
+    android:text="Room #"
+    android:gravity="center"/>
+
