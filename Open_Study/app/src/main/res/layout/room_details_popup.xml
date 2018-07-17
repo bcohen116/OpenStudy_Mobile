@@ -18,12 +18,12 @@
         android:src="@android:drawable/presence_offline" />
 
     <TextView
-        android:id="@+id/name"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_centerHorizontal="true"
-        android:padding="25sp"
-        android:text="Room #: " />
+    android:id="@+id/name"
+    android:layout_width="wrap_content"
+    android:layout_height="wrap_content"
+    android:layout_centerHorizontal="true"
+    android:padding="25sp"
+    android:text="Room #: " />
     <TextView
         android:id="@+id/availablility"
         android:layout_width="wrap_content"
