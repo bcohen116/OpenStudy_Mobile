@@ -266,6 +266,11 @@ class LoginActivity : AppCompatActivity(), LoaderCallbacks<Cursor> {
             showProgress(false)
 
             if (success!!) {
+                val PREFS_FILENAME = "com.ben.openstudy.login.prefs"
+                val prefs = applicationContext.getSharedPreferences(PREFS_FILENAME, 0)
+                val editor = prefs!!.edit()
+                editor.putBoolean("previous_login", true)
+                editor.apply()
                 finish()
             } else {
                 password.error = getString(R.string.error_incorrect_password)

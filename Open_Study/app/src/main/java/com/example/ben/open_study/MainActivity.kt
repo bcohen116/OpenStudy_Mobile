@@ -2,6 +2,7 @@ package com.example.ben.open_study
 
 import android.app.ActionBar
 import android.content.Context
+import android.content.Intent
 import android.graphics.drawable.Drawable
 import android.support.v7.app.AppCompatActivity
 import android.os.Bundle
@@ -25,11 +26,29 @@ class MainActivity : AppCompatActivity(),RecyclerViewAdapter.ItemClickListener {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
 
+        //Initialize variables
+        val PREFS_FILENAME = "com.ben.openstudy.login.prefs"
+        val prefs = this.getSharedPreferences(PREFS_FILENAME, 0)
+
         val floorPicker = findViewById<RadioGroup>(R.id.floorPicker);
         val roomList:RecyclerView = findViewById(R.id.roomList);
 
+        //The Following Block is for resetting the shared preferences, hid it inside the logo
+        // (long press the logo to access the login screen on next app launch)
+        val logo:ImageView = findViewById(R.id.logo)
+        logo.setOnLongClickListener {
+            val editor = prefs!!.edit()
+            editor.putBoolean("previous_login", false)
+            editor.apply()
+            return@setOnLongClickListener true
+        }
+
+        checkLogin()//Check if the User has logged in before
+
+        //Create the Room List
         roomList.layoutManager = GridLayoutManager(this,2);//2 column list
         roomList.setHasFixedSize(true);
+        //Change the room list when changing floors
         floorPicker.setOnCheckedChangeListener{ group, checkedId ->
             var roomData:ArrayList<Room>;
             val selected: RadioButton = findViewById(checkedId)
@@ -58,20 +77,86 @@ class MainActivity : AppCompatActivity(),RecyclerViewAdapter.ItemClickListener {
             adapter.setClickListener(this)
             roomList.adapter = adapter
         }
+        floorPicker.check(R.id.radioButton)//Default to the first Floor of the library
     }
 
+    //Check if the User has logged in before, make them log in if they have not.
+    private fun checkLogin(){
+        val PREFS_FILENAME = "com.ben.openstudy.login.prefs"
+        val prefs = this.getSharedPreferences(PREFS_FILENAME, 0)
+        var loggedInBefore = prefs.getBoolean("previous_login",false)
+
+        if (!loggedInBefore){
+            val intent:Intent = Intent(this,LoginActivity::class.java)
+            startActivity(intent)
+        }
+    }
+
+    //Retreive the room data from the database to populate the room list and popups
     private fun retrieveData(floor:Int): ArrayList<Room> {
         var data:ArrayList<Room> = ArrayList();
         //put database info request here
 
         //test Data
-        data.add(Room("5467",false,"This is test data for room #1."))
-        data.add(Room("5738",false,"This is test data for room #2."))
-        data.add(Room("6473",true,"This is test data for room #3."))
-        data.add(Room("6782",false,"This is test data for room #4."))
+        if (floor == 4){
+            data.add(Room("410",false,"This is test data for room #410."))
+            data.add(Room("412",true,"This is test data for room #412."))
+            data.add(Room("414",false,"This is test data for room #414."))
+            data.add(Room("416",true,"This is test data for room #416."))
+            data.add(Room("420A",false,"This is test data for room #420A."))
+            data.add(Room("457B",false,"This is test data for room #457B."))
+            data.add(Room("463",false,"This is test data for room #463."))
+        }
+        else if (floor == 5){
+            data.add(Room("502",false,"This is test data for room #502."))
+            data.add(Room("503",true,"This is test data for room #503."))
+            data.add(Room("504",false,"This is test data for room #504."))
+            data.add(Room("505",true,"This is test data for room #505."))
+            data.add(Room("510",false,"This is test data for room #510."))
+            data.add(Room("511",false,"This is test data for room #511."))
+            data.add(Room("512",false,"This is test data for room #512."))
+        }
+        else{
+            data.add(Room("602",false,"This is test data for room #602."))
+            data.add(Room("603",true,"This is test data for room #603."))
+            data.add(Room("604",false,"This is test data for room #604."))
+            data.add(Room("605",true,"This is test data for room #605."))
+            data.add(Room("610",false,"This is test data for room #610."))
+            data.add(Room("611",false,"This is test data for room #611."))
+            data.add(Room("612",false,"This is test data for room #612."))
+            data.add(Room("613",false,"This is test data for room #613."))
+            data.add(Room("614",false,"This is test data for room #614."))
+            data.add(Room("615",false,"This is test data for room #615."))
+            data.add(Room("616",false,"This is test data for room #616."))
+            data.add(Room("617",false,"This is test data for room #617."))
+            data.add(Room("618",false,"This is test data for room #618."))
+            data.add(Room("619",false,"This is test data for room #619."))
+            data.add(Room("620",false,"This is test data for room #620."))
+            data.add(Room("621",false,"This is test data for room #621."))
+            data.add(Room("651",false,"This is test data for room #651."))
+            data.add(Room("652",false,"This is test data for room #652."))
+            data.add(Room("657A-C",false,"This is test data for room #657A-C."))
+            data.add(Room("659",false,"This is test data for room #659."))
+            data.add(Room("661",false,"This is test data for room #661."))
+            data.add(Room("662",false,"This is test data for room #662."))
+            data.add(Room("663",false,"This is test data for room #663."))
+            data.add(Room("664",false,"This is test data for room #664."))
+            data.add(Room("665",false,"This is test data for room #665."))
+            data.add(Room("666",false,"This is test data for room #666."))
+            data.add(Room("667",false,"This is test data for room #667."))
+            data.add(Room("668",false,"This is test data for room #668."))
+            data.add(Room("669",false,"This is test data for room #669."))
+            data.add(Room("670",false,"This is test data for room #670."))
+            data.add(Room("671",false,"This is test data for room #671."))
+
+
+
+        }
+
         return data;
     }
 
+    //Put info in the popup window after clicking on a room
     override fun onItemClick(view: View, position: Int) {
         Log.i("Info: ", adapter.getItem(position).name + " was clicked...")
 
