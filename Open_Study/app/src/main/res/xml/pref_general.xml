@@ -22,9 +22,9 @@
             android:data="http://www.openstudyuc.xyz" />
     </Preference>
     <Preference
+        android:key="Logout"
         android:title="Tap to Log Out">
-        <intent android:action="android.intent.action.VIEW"
-            android:data="http://www.openstudyuc.xyz" />
+        <intent android:action="com.example.ben.open_study.LoginActivity"/>
     </Preference>
 
 </PreferenceScreen>

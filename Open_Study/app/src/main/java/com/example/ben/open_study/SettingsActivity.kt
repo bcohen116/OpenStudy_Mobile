@@ -86,6 +86,10 @@ class SettingsActivity : AppCompatPreferenceActivity() {
             super.onCreate(savedInstanceState)
             addPreferencesFromResource(R.xml.pref_general)
             setHasOptionsMenu(true)
+            val logoutBtn:Preference = findPreference("Logout")
+            logoutBtn.onPreferenceClickListener{v->
+
+            }
 
             // Bind the summaries of EditText/List/Dialog/Ringtone preferences
             // to their values. When their values change, their summaries are
