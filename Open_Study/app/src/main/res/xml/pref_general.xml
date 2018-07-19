@@ -1,0 +1,30 @@
+<PreferenceScreen xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <!-- NOTE: EditTextPreference accepts EditText attributes. -->
+    <!-- NOTE: EditTextPreference's summary should be set to its value by the activity code. -->
+    <EditTextPreference
+        android:capitalize="words"
+        android:defaultValue="@string/pref_default_display_name"
+        android:inputType="textPassword"
+        android:key="example_text"
+        android:maxLines="1"
+        android:selectAllOnFocus="true"
+        android:singleLine="true"
+        android:title="@string/change_password" />
+
+    <!-- NOTE: Hide buttons to simplify the UI. Users can touch outside the dialog to
+         dismiss it. -->
+    <!-- NOTE: ListPreference's summary should be set to its value by the activity code. -->
+    <Preference
+        android:title="@string/website_url"
+        android:summary="@string/website_url2">
+        <intent android:action="android.intent.action.VIEW"
+            android:data="http://www.openstudyuc.xyz" />
+    </Preference>
+    <Preference
+        android:title="Tap to Log Out">
+        <intent android:action="android.intent.action.VIEW"
+            android:data="http://www.openstudyuc.xyz" />
+    </Preference>
+
+</PreferenceScreen>

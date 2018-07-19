@@ -1,11 +1,21 @@
 package com.example.ben.open_study
 
+import android.Manifest
 import android.app.ActionBar
+import android.app.AlertDialog
+import android.app.PendingIntent
+import android.content.BroadcastReceiver
 import android.content.Context
+import android.content.DialogInterface
 import android.content.Intent
+import android.content.pm.PackageManager
 import android.graphics.drawable.Drawable
+import android.location.*
+import android.net.wifi.WifiConfiguration
 import android.support.v7.app.AppCompatActivity
 import android.os.Bundle
+import android.support.v4.app.ActivityCompat
+import android.support.v4.content.ContextCompat
 import android.support.v7.widget.GridLayoutManager
 import android.support.v7.widget.LinearLayoutManager
 import android.support.v7.widget.RecyclerView
@@ -15,12 +25,21 @@ import android.view.View
 import java.util.*
 import android.view.LayoutInflater
 import android.widget.*
+import com.google.android.gms.common.api.PendingResult
+import com.google.android.gms.common.api.Status
+import com.google.android.gms.gcm.Task
+import com.google.android.gms.location.*
 import kotlinx.android.synthetic.main.room_details_popup.view.*
+import java.io.IOException
+import java.security.Permission
+import kotlin.collections.ArrayList
 
 
 class MainActivity : AppCompatActivity(),RecyclerViewAdapter.ItemClickListener {
 
     lateinit var adapter:RecyclerViewAdapter
+    lateinit var geofencingClient: GeofencingClient
+    lateinit var geofences:ArrayList<Geofence>
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -32,6 +51,9 @@ class MainActivity : AppCompatActivity(),RecyclerViewAdapter.ItemClickListener {
 
         val floorPicker = findViewById<RadioGroup>(R.id.floorPicker);
         val roomList:RecyclerView = findViewById(R.id.roomList);
+
+        val toolBar:android.support.v7.widget.Toolbar = findViewById(R.id.toolbar)
+        setSupportActionBar(toolBar)
 
         //The Following Block is for resetting the shared preferences, hid it inside the logo
         // (long press the logo to access the login screen on next app launch)
@@ -45,12 +67,18 @@ class MainActivity : AppCompatActivity(),RecyclerViewAdapter.ItemClickListener {
 
         checkLogin()//Check if the User has logged in before
 
+        //Init the location services
+        geofencingClient = LocationServices.getGeofencingClient(this)
+        ActivityCompat.requestPermissions(this@MainActivity, arrayOf(Manifest.permission.ACCESS_FINE_LOCATION, Manifest.permission.ACCESS_COARSE_LOCATION), 100)
+        geofences = createGeofence()
+
+
         //Create the Room List
         roomList.layoutManager = GridLayoutManager(this,2);//2 column list
         roomList.setHasFixedSize(true);
         //Change the room list when changing floors
         floorPicker.setOnCheckedChangeListener{ group, checkedId ->
-            var roomData:ArrayList<Room>;
+            val roomData:ArrayList<Room>;
             val selected: RadioButton = findViewById(checkedId)
             for (x in 0..(floorPicker.childCount - 1)){
                 val radioBtn:View = floorPicker.getChildAt(x)
@@ -78,13 +106,23 @@ class MainActivity : AppCompatActivity(),RecyclerViewAdapter.ItemClickListener {
             roomList.adapter = adapter
         }
         floorPicker.check(R.id.radioButton)//Default to the first Floor of the library
+
+
+
+
+        //Settings hamburger button click listener
+        val settingsBtn:ImageButton = findViewById(R.id.settingsBtn)
+        settingsBtn.setOnClickListener {
+            val settingIntent:Intent = Intent(this,SettingsActivity::class.java)
+            startActivity(settingIntent)
+        }
     }
 
     //Check if the User has logged in before, make them log in if they have not.
     private fun checkLogin(){
         val PREFS_FILENAME = "com.ben.openstudy.login.prefs"
         val prefs = this.getSharedPreferences(PREFS_FILENAME, 0)
-        var loggedInBefore = prefs.getBoolean("previous_login",false)
+        val loggedInBefore = prefs.getBoolean("previous_login",false)
 
         if (!loggedInBefore){
             val intent:Intent = Intent(this,LoginActivity::class.java)
@@ -94,7 +132,7 @@ class MainActivity : AppCompatActivity(),RecyclerViewAdapter.ItemClickListener {
 
     //Retreive the room data from the database to populate the room list and popups
     private fun retrieveData(floor:Int): ArrayList<Room> {
-        var data:ArrayList<Room> = ArrayList();
+        val data:ArrayList<Room> = ArrayList();
         //put database info request here
 
         //test Data
@@ -191,6 +229,150 @@ class MainActivity : AppCompatActivity(),RecyclerViewAdapter.ItemClickListener {
         closeButton.setOnClickListener { v ->
             popupWindow.dismiss()
         }
+
+        //When the take room switch is flipped, this will be triggered
+        val roomSwitch:Switch = popupView.findViewById(R.id.switch1)
+        roomSwitch.setOnClickListener {
+            if(checkLocation()){
+                modifyRoom(adapter.getItem(position))
+            }
+        }
+
         popupWindow.showAtLocation(findViewById(R.id.roomListLayout),Gravity.CENTER,0,0)
     }
+
+    private fun checkLocation() : Boolean{
+        //Check if the user allowed location permission and has it turned on
+        if (ContextCompat.checkSelfPermission(this,Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED &&
+                ContextCompat.checkSelfPermission(this,Manifest.permission.ACCESS_COARSE_LOCATION) == PackageManager.PERMISSION_GRANTED){
+            if(checkLocationSetting()){
+                //turn on location tracking to see if the user is close to the library in order to allow them to make changes to a room
+                val result: com.google.android.gms.tasks.Task<Void>? = geofencingClient?.addGeofences(getGeofencingRequest(), geofencePendingIntent)?.run {
+                    addOnSuccessListener {
+                        // Geofences added
+                        // ...
+                        Log.d("GeofenceClient: ", "Geofence added...")
+
+                    }
+                    addOnFailureListener {
+                        // Failed to add geofences
+                        // ...
+                        Log.e("GeofenceClient: ", "Geofence FAILED to add...")
+                    }
+                }
+                while(result?.isComplete != true){
+
+                }
+                if (result?.isSuccessful == true){
+                    Log.d("GeofenceClient: ", "Location Found.....")
+                    return true
+                }
+                else{
+                    Log.e("GeofenceClient: ", "Location Lost...")
+                    return false
+                }
+            }
+            else{
+                buildAlertMessageNoGps()
+            }
+        }
+        else{
+            ActivityCompat.requestPermissions(this@MainActivity, arrayOf(Manifest.permission.ACCESS_FINE_LOCATION, Manifest.permission.ACCESS_COARSE_LOCATION), 100)
+        }
+        //Close the location tracking to save battery, in this case, something failed so it should stop searching
+        geofencingClient?.removeGeofences(geofencePendingIntent)?.run {
+            addOnSuccessListener {
+                // Geofences removed
+                // ...
+                Log.d("GeofenceClient: ", "Geofence Closed...")
+            }
+            addOnFailureListener {
+                // Failed to remove geofences
+                // ...
+                Log.e("GeofenceClient: ", "Geofence FAILED to close...")
+            }
+        }
+        return false
+    }
+    //Check if the location setting on the phone is turned on
+    private fun checkLocationSetting(): Boolean{
+        lateinit var locationManager: LocationManager
+        locationManager = getSystemService(Context.LOCATION_SERVICE) as LocationManager
+        return locationManager.isProviderEnabled(LocationManager.GPS_PROVIDER) || locationManager.isProviderEnabled(LocationManager.NETWORK_PROVIDER)
+    }
+    //change the availability of a room
+    private fun modifyRoom(room:Room){
+        room.availability = !room.availability
+        //Close the location tracking to save battery
+        geofencingClient?.removeGeofences(geofencePendingIntent)?.run {
+            addOnSuccessListener {
+                // Geofences removed
+                // ...
+                Log.d("GeofenceClient: ", "Geofence Closed...")
+            }
+            addOnFailureListener {
+                // Failed to remove geofences
+                // ...
+                Log.e("GeofenceClient: ", "Geofence FAILED to close...")
+            }
+        }
+    }
+    //create the marker for the library location
+    private fun createGeofence():ArrayList<Geofence>{
+        var geofenceList:ArrayList<Geofence> = arrayListOf()
+        geofenceList.add(Geofence.Builder()
+                // Set the request ID of the geofence. This is a string to identify this
+                // geofence.
+                .setRequestId("Langsam")
+
+                // Set the circular region of this geofence. (latitude, longitude, radius in meters)
+                .setCircularRegion(39.135266,-84.515419,100000f)
+
+                // Set the expiration duration of the geofence. This geofence gets automatically
+                // removed after this period of time.
+                .setExpirationDuration(Geofence.NEVER_EXPIRE)
+
+                // Set the transition types of interest. Alerts are only generated for these
+                .setTransitionTypes(Geofence.GEOFENCE_TRANSITION_ENTER or Geofence.GEOFENCE_TRANSITION_DWELL)
+                .setLoiteringDelay(10000)//in milliseconds
+
+                // Create the geofence.
+                .build())
+        return geofenceList
+    }
+    //one of multiple methods used to retreive user location
+    private fun getGeofencingRequest(): GeofencingRequest {
+        return GeofencingRequest.Builder().apply {
+            setInitialTrigger(GeofencingRequest.INITIAL_TRIGGER_ENTER)
+            addGeofences(geofences)
+        }.build()
+    }
+    //one of multiple methods used to retreive user location
+    private val geofencePendingIntent: PendingIntent by lazy {
+        val intent = Intent(this, GeofenceTransitionsIntentService::class.java)
+        // We use FLAG_UPDATE_CURRENT so that we get the same pending intent back when calling
+        // addGeofences() and removeGeofences().
+        PendingIntent.getService(this, 0, intent, PendingIntent.FLAG_UPDATE_CURRENT)
+    }
+    //Takes the user to the settings page if they did not have location turned on
+    private fun buildAlertMessageNoGps() {
+        val  builder:AlertDialog.Builder = AlertDialog.Builder(this);
+        builder.setMessage("Your GPS seems to be disabled, do you want to enable it?")
+                .setCancelable(false)
+                .setPositiveButton("Yes") { dialog, button ->
+                    startActivity(Intent(android.provider.Settings.ACTION_LOCATION_SOURCE_SETTINGS))
+                }
+                .setNegativeButton("No") { dialog, button ->
+                    dialog.cancel()
+                }
+        val alert:AlertDialog = builder.create()
+        alert.show();
+    }
+    //used for location notifications
+    companion object {
+        fun makeNotificationIntent(geofenceService: Context): Intent {
+            return Intent(geofenceService, MainActivity::class.java)
+        }
+    }
+
 }

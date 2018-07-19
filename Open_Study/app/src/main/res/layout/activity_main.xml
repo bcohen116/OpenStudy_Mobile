@@ -7,11 +7,32 @@
     android:layout_height="match_parent"
     tools:context=".MainActivity">
 
+    <android.support.v7.widget.Toolbar
+        android:id="@+id/toolbar"
+        android:minHeight="?attr/actionBarSize"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        app:titleTextColor="@android:color/white"
+        app:title="@string/app_name"
+        android:background="?attr/colorPrimary">
+
+        <ImageButton
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="My Title"
+            android:layout_marginEnd="10dp"
+            android:layout_gravity="right"
+            android:src="@drawable/baseline_menu_black_18dp"
+            android:id="@+id/settingsBtn" />
+
+    </android.support.v7.widget.Toolbar>
+
     <ImageView
         android:id="@+id/logo"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_centerHorizontal="true"
+        android:layout_below="@+id/toolbar"
         android:src="@drawable/ic_launcher_background"
         android:contentDescription="TODO" />
 
