@@ -234,7 +234,7 @@ class MainActivity : AppCompatActivity(),RecyclerViewAdapter.ItemClickListener {
         val roomSwitch:Switch = popupView.findViewById(R.id.switch1)
         roomSwitch.setOnClickListener {
             if(checkLocation()){
-                modifyRoom(adapter.getItem(position))
+                modifyRoom(adapter.getItem(position),popupView)
             }
         }
 
@@ -261,7 +261,7 @@ class MainActivity : AppCompatActivity(),RecyclerViewAdapter.ItemClickListener {
                     }
                 }
                 while(result?.isComplete != true){
-
+                    //This is bad practice, but I need to wait for the geofencing to finish in order for the following to run correctly
                 }
                 if (result?.isSuccessful == true){
                     Log.d("GeofenceClient: ", "Location Found.....")
@@ -301,8 +301,14 @@ class MainActivity : AppCompatActivity(),RecyclerViewAdapter.ItemClickListener {
         return locationManager.isProviderEnabled(LocationManager.GPS_PROVIDER) || locationManager.isProviderEnabled(LocationManager.NETWORK_PROVIDER)
     }
     //change the availability of a room
-    private fun modifyRoom(room:Room){
+    private fun modifyRoom(room:Room,popupView:View){
         room.availability = !room.availability
+        val availTxt:TextView = popupView.findViewById(R.id.availablility)
+        availTxt.text = "Available: " + room.availability
+        if(room.availability)
+            popupView.switch1.text = "Take Room"
+        else
+            popupView.switch1.text = "I'm done with Room"
         //Close the location tracking to save battery
         geofencingClient?.removeGeofences(geofencePendingIntent)?.run {
             addOnSuccessListener {
@@ -354,6 +360,7 @@ class MainActivity : AppCompatActivity(),RecyclerViewAdapter.ItemClickListener {
         // addGeofences() and removeGeofences().
         PendingIntent.getService(this, 0, intent, PendingIntent.FLAG_UPDATE_CURRENT)
     }
+
     //Takes the user to the settings page if they did not have location turned on
     private fun buildAlertMessageNoGps() {
         val  builder:AlertDialog.Builder = AlertDialog.Builder(this);
@@ -363,6 +370,7 @@ class MainActivity : AppCompatActivity(),RecyclerViewAdapter.ItemClickListener {
                     startActivity(Intent(android.provider.Settings.ACTION_LOCATION_SOURCE_SETTINGS))
                 }
                 .setNegativeButton("No") { dialog, button ->
+                    checkLocation()
                     dialog.cancel()
                 }
         val alert:AlertDialog = builder.create()

@@ -1,6 +1,8 @@
 package com.example.ben.open_study
 
 import android.annotation.TargetApi
+import android.app.Activity
+import android.app.Activity.RESULT_OK
 import android.content.Context
 import android.content.Intent
 import android.content.res.Configuration
@@ -87,8 +89,22 @@ class SettingsActivity : AppCompatPreferenceActivity() {
             addPreferencesFromResource(R.xml.pref_general)
             setHasOptionsMenu(true)
             val logoutBtn:Preference = findPreference("Logout")
-            logoutBtn.onPreferenceClickListener{v->
+            logoutBtn.setOnPreferenceClickListener{
+                //Remove saved passwords
+                val PREFS_FILENAME = "com.ben.openstudy.login.prefs"
+                val prefs = this.activity.getSharedPreferences(PREFS_FILENAME, 0)
+                val editor = prefs!!.edit()
+                editor.putBoolean("previous_login", false)
+                editor.apply()
 
+                //restart the app
+                val intent:Intent = Intent(this.activity,MainActivity::class.java)
+                val intent2:Intent = Intent(this.activity,LoginActivity::class.java)
+                intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TASK or Intent.FLAG_ACTIVITY_NEW_TASK)
+                startActivity(intent)
+                startActivity(intent2)
+                this.activity.finish()
+                true
             }
 
             // Bind the summaries of EditText/List/Dialog/Ringtone preferences
