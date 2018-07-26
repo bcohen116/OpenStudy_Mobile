@@ -33,7 +33,7 @@
         android:layout_height="wrap_content"
         android:layout_centerHorizontal="true"
         android:layout_below="@+id/toolbar"
-        android:src="@drawable/Open_study_logo_108_red_background"
+        android:src="@drawable/open_study_logo_108_red_background"
         android:contentDescription="TODO" />
 
     <RadioGroup
