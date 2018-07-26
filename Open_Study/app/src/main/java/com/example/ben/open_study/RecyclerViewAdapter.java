@@ -1,6 +1,9 @@
 package com.example.ben.open_study;
 
 import android.content.Context;
+import android.graphics.drawable.BitmapDrawable;
+import android.graphics.drawable.Drawable;
+import android.support.v4.content.ContextCompat;
 import android.support.v7.widget.RecyclerView;
 import android.util.Log;
 import android.view.LayoutInflater;
@@ -14,11 +17,13 @@ public class RecyclerViewAdapter extends RecyclerView.Adapter<RecyclerViewAdapte
     private ArrayList<Room> mData;
     private LayoutInflater mInflater;
     private ItemClickListener mClickListener;
+    private Context mContext;
 
     // data is passed into the constructor
     RecyclerViewAdapter(Context context, ArrayList<Room> data) {
         this.mInflater = LayoutInflater.from(context);
         this.mData = data;
+        this.mContext = context;
     }
 
     // inflates the cell layout from xml when needed
@@ -32,6 +37,17 @@ public class RecyclerViewAdapter extends RecyclerView.Adapter<RecyclerViewAdapte
     @Override
     public void onBindViewHolder(ViewHolder holder, int position) {
         holder.myTextView.setText(mData.get(position).getName());
+        //Set the room list images
+        if (mData.get(position).getAvailability()){
+            //room is available, change image to display that info
+            Drawable roomAvailableImg = ContextCompat.getDrawable(mContext,R.drawable.baseline_menu_black_18dp);
+            holder.myTextView.setCompoundDrawables(roomAvailableImg,null,null,null);
+        }
+        else{
+            //room is not available
+            Drawable roomAvailableImg = ContextCompat.getDrawable(mContext,R.drawable.cast_album_art_placeholder);
+            holder.myTextView.setCompoundDrawables(roomAvailableImg,null,null,null);
+        }
     }
 
     // total number of cells
