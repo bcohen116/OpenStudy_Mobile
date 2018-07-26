@@ -40,12 +40,12 @@ public class RecyclerViewAdapter extends RecyclerView.Adapter<RecyclerViewAdapte
         //Set the room list images
         if (mData.get(position).getAvailability()){
             //room is available, change image to display that info
-            Drawable roomAvailableImg = ContextCompat.getDrawable(mContext,R.drawable.baseline_menu_black_18dp);
+            Drawable roomAvailableImg = ContextCompat.getDrawable(mContext,R.drawable.baseline_meeting_room_green_48dp);
             holder.myTextView.setCompoundDrawables(roomAvailableImg,null,null,null);
         }
         else{
             //room is not available
-            Drawable roomAvailableImg = ContextCompat.getDrawable(mContext,R.drawable.cast_album_art_placeholder);
+            Drawable roomAvailableImg = ContextCompat.getDrawable(mContext,R.drawable.baseline_no_meeting_room_red_48dp);
             holder.myTextView.setCompoundDrawables(roomAvailableImg,null,null,null);
         }
     }

@@ -46,6 +46,6 @@
         android:layout_below="@+id/notes"
         android:layout_centerHorizontal="true"
         android:text="Take room"
-        android:thumb="@android:drawable/btn_star_big_on" />
+        android:thumb="@drawable/Switch_20" />
 
 </RelativeLayout>
