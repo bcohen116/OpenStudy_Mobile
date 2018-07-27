@@ -9,12 +9,13 @@
 
     <ImageButton
         android:id="@+id/ib_close"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
+        android:layout_width="50dp"
+        android:layout_height="50dp"
         android:layout_below="@+id/switch1"
         android:layout_centerHorizontal="true"
         android:background="@null"
-        android:padding="20dp"
+        android:scaleType="fitXY"
+        android:layout_marginTop="20dp"
         android:src="@android:drawable/presence_offline" />
 
     <TextView
@@ -22,6 +23,8 @@
     android:layout_width="wrap_content"
     android:layout_height="wrap_content"
     android:layout_centerHorizontal="true"
+        android:textSize="18sp"
+        android:textColor="@color/colorWhite"
     android:padding="25sp"
     android:text="Room #: " />
     <TextView
@@ -30,13 +33,17 @@
         android:layout_height="wrap_content"
         android:layout_below="@+id/name"
         android:padding="25sp"
+        android:textSize="18sp"
+        android:textColor="@color/colorWhite"
         android:text="Available: " />
     <TextView
         android:id="@+id/notes"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
+        android:textSize="18sp"
         android:layout_below="@+id/availablility"
         android:padding="25sp"
+        android:textColor="@color/colorWhite"
         android:text="Room Notes: " />
 
     <Switch
@@ -45,6 +52,8 @@
         android:layout_height="wrap_content"
         android:layout_below="@+id/notes"
         android:layout_centerHorizontal="true"
+        android:switchPadding="15dp"
+        android:textColor="@color/colorWhite"
         android:text="Take room" />
 
 </RelativeLayout>

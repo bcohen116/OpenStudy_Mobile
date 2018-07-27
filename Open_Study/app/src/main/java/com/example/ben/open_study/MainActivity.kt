@@ -40,6 +40,8 @@ class MainActivity : AppCompatActivity(),RecyclerViewAdapter.ItemClickListener {
     lateinit var adapter:RecyclerViewAdapter
     lateinit var geofencingClient: GeofencingClient
     lateinit var geofences:ArrayList<Geofence>
+    lateinit var floorPicker:RadioGroup
+    lateinit var roomList:RecyclerView
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -49,8 +51,8 @@ class MainActivity : AppCompatActivity(),RecyclerViewAdapter.ItemClickListener {
         val PREFS_FILENAME = "com.ben.openstudy.login.prefs"
         val prefs = this.getSharedPreferences(PREFS_FILENAME, 0)
 
-        val floorPicker = findViewById<RadioGroup>(R.id.floorPicker);
-        val roomList:RecyclerView = findViewById(R.id.roomList);
+        floorPicker = findViewById<RadioGroup>(R.id.floorPicker);
+        roomList = findViewById(R.id.roomList);
 
         val toolBar:android.support.v7.widget.Toolbar = findViewById(R.id.toolbar)
         setSupportActionBar(toolBar)
@@ -78,7 +80,7 @@ class MainActivity : AppCompatActivity(),RecyclerViewAdapter.ItemClickListener {
         roomList.setHasFixedSize(true);
         //Change the room list when changing floors
         floorPicker.setOnCheckedChangeListener{ group, checkedId ->
-            val roomData:ArrayList<Room>;
+            var roomData:ArrayList<Room>
             val selected: RadioButton = findViewById(checkedId)
             for (x in 0..(floorPicker.childCount - 1)){
                 val radioBtn:View = floorPicker.getChildAt(x)
@@ -88,22 +90,9 @@ class MainActivity : AppCompatActivity(),RecyclerViewAdapter.ItemClickListener {
             }
             val selectionIcon: Drawable = this.getDrawable(android.R.drawable.button_onoff_indicator_on)
             selected.setCompoundDrawablesWithIntrinsicBounds(null,null,null,selectionIcon)
-            if (selected.id == R.id.radioButton){
-                //Floor 4 was selected... retrieve info from database
-                roomData = retrieveData(4)
-            }
-            else if (selected.id == R.id.radioButton2){
-                //Floor 5 was selected... retrieve info from database
-                roomData = retrieveData(5)
-            }
-            else{
-                //Floor 6 was selected.. retrieve info from database
-                roomData = retrieveData(6)
-            }
+            roomData = checkCurrentFloor(selected)
             //Populate the list
-            adapter = RecyclerViewAdapter(this,roomData)
-            adapter.setClickListener(this)
-            roomList.adapter = adapter
+            refreshRoomList(roomData)
         }
         floorPicker.check(R.id.radioButton)//Default to the first Floor of the library
 
@@ -116,6 +105,29 @@ class MainActivity : AppCompatActivity(),RecyclerViewAdapter.ItemClickListener {
             val settingIntent:Intent = Intent(this,SettingsActivity::class.java)
             startActivity(settingIntent)
         }
+    }
+    private fun refreshRoomList(roomData:ArrayList<Room>){
+        //Populate the list
+        adapter = RecyclerViewAdapter(this,roomData)
+        adapter.setClickListener(this)
+        roomList.adapter = adapter
+    }
+
+    private fun checkCurrentFloor(selected:RadioButton):ArrayList<Room>{
+        val roomData:ArrayList<Room>;
+        if (selected.id == R.id.radioButton){
+            //Floor 4 was selected... retrieve info from database
+            roomData = retrieveData(4)
+        }
+        else if (selected.id == R.id.radioButton2){
+            //Floor 5 was selected... retrieve info from database
+            roomData = retrieveData(5)
+        }
+        else{
+            //Floor 6 was selected.. retrieve info from database
+            roomData = retrieveData(6)
+        }
+        return roomData
     }
 
     //Check if the User has logged in before, make them log in if they have not.
@@ -228,6 +240,11 @@ class MainActivity : AppCompatActivity(),RecyclerViewAdapter.ItemClickListener {
         val closeButton: ImageButton = popupView.findViewById(R.id.ib_close)
         closeButton.setOnClickListener { v ->
             popupWindow.dismiss()
+            val roomData:ArrayList<Room>;
+            val selected:RadioButton = findViewById(floorPicker.checkedRadioButtonId)
+            roomData = checkCurrentFloor(selected)
+            //Populate the list
+            refreshRoomList(roomData)
         }
 
         //When the take room switch is flipped, this will be triggered
