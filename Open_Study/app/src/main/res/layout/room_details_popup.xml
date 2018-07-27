@@ -45,7 +45,6 @@
         android:layout_height="wrap_content"
         android:layout_below="@+id/notes"
         android:layout_centerHorizontal="true"
-        android:text="Take room"
-        android:thumb="@drawable/switch_20" />
+        android:text="Take room" />
 
 </RelativeLayout>

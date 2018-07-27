@@ -1,6 +1,7 @@
 package com.example.ben.open_study;
 
 import android.content.Context;
+import android.graphics.Bitmap;
 import android.graphics.drawable.BitmapDrawable;
 import android.graphics.drawable.Drawable;
 import android.support.v4.content.ContextCompat;
@@ -38,16 +39,18 @@ public class RecyclerViewAdapter extends RecyclerView.Adapter<RecyclerViewAdapte
     public void onBindViewHolder(ViewHolder holder, int position) {
         holder.myTextView.setText(mData.get(position).getName());
         //Set the room list images
+        Drawable roomAvailableImg;
         if (mData.get(position).getAvailability()){
             //room is available, change image to display that info
-            Drawable roomAvailableImg = ContextCompat.getDrawable(mContext,R.drawable.baseline_meeting_room_green_48dp);
-            holder.myTextView.setCompoundDrawables(roomAvailableImg,null,null,null);
+            roomAvailableImg = ContextCompat.getDrawable(mContext,R.drawable.baseline_meeting_room_green_48dp);
         }
         else{
             //room is not available
-            Drawable roomAvailableImg = ContextCompat.getDrawable(mContext,R.drawable.baseline_no_meeting_room_red_48dp);
-            holder.myTextView.setCompoundDrawables(roomAvailableImg,null,null,null);
+            roomAvailableImg = ContextCompat.getDrawable(mContext,R.drawable.baseline_no_meeting_room_red_48dp);
         }
+        Bitmap bitmapImg = ((BitmapDrawable) roomAvailableImg).getBitmap();
+        Drawable resizedImg = new BitmapDrawable(mContext.getResources(), Bitmap.createScaledBitmap(bitmapImg, 150, 150, true));
+        holder.myTextView.setCompoundDrawablesWithIntrinsicBounds(resizedImg,null,null,null);
     }
 
     // total number of cells
