@@ -4,6 +4,8 @@ apply plugin: 'kotlin-android'
 
 apply plugin: 'kotlin-android-extensions'
 
+apply plugin: 'kotlin-kapt'
+
 android {
     compileSdkVersion 27
     defaultConfig {
@@ -35,4 +37,7 @@ dependencies {
     implementation 'com.android.support:recyclerview-v7:27.1.1'
     implementation 'io.github.microutils:kotlin-logging:1.4.9'
     implementation 'com.google.android.gms:play-services:12.0.1'
+    implementation 'com.android.volley:volley:1.1.1'
+    implementation 'com.squareup.moshi:moshi-kotlin:1.6.0'
+    kapt 'com.squareup.moshi:moshi-kotlin-codegen:1.6.0'
 }

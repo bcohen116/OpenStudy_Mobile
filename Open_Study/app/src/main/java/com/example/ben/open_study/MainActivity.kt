@@ -25,12 +25,25 @@ import android.view.View
 import java.util.*
 import android.view.LayoutInflater
 import android.widget.*
+import com.android.volley.Request
+import com.android.volley.Response
+import com.android.volley.toolbox.JsonArrayRequest
+import com.android.volley.toolbox.StringRequest
+import com.android.volley.toolbox.Volley
 import com.google.android.gms.common.api.PendingResult
 import com.google.android.gms.common.api.Status
 import com.google.android.gms.gcm.Task
 import com.google.android.gms.location.*
+import com.squareup.moshi.JsonAdapter
+import com.squareup.moshi.Moshi
+import com.squareup.moshi.Types
+import com.squareup.moshi.Types.newParameterizedType
+import com.squareup.moshi.kotlin.reflect.KotlinJsonAdapterFactory
 import kotlinx.android.synthetic.main.room_details_popup.view.*
+import org.json.JSONArray
+import org.json.JSONObject
 import java.io.IOException
+import java.lang.reflect.Type
 import java.security.Permission
 import kotlin.collections.ArrayList
 
@@ -54,6 +67,7 @@ class MainActivity : AppCompatActivity(),RecyclerViewAdapter.ItemClickListener {
         floorPicker = findViewById<RadioGroup>(R.id.floorPicker);
         roomList = findViewById(R.id.roomList);
 
+        //Initialize the action bar at the top of the screen
         val toolBar:android.support.v7.widget.Toolbar = findViewById(R.id.toolbar)
         setSupportActionBar(toolBar)
 
@@ -96,7 +110,9 @@ class MainActivity : AppCompatActivity(),RecyclerViewAdapter.ItemClickListener {
         }
         floorPicker.check(R.id.radioButton)//Default to the first Floor of the library
 
-
+        //Start service to check for room data changes and send notifications
+        val serviceIntent:Intent = Intent(this,NotificationService::class.java)
+        startService(serviceIntent)
 
 
         //Settings hamburger button click listener
@@ -142,68 +158,42 @@ class MainActivity : AppCompatActivity(),RecyclerViewAdapter.ItemClickListener {
         }
     }
 
-    //Retreive the room data from the database to populate the room list and popups
+    //Retrieve the room data from the database to populate the room list and popups
     private fun retrieveData(floor:Int): ArrayList<Room> {
         val data:ArrayList<Room> = ArrayList();
-        //put database info request here
-
-        //test Data
-        if (floor == 4){
-            data.add(Room("410",false,"This is test data for room #410."))
-            data.add(Room("412",true,"This is test data for room #412."))
-            data.add(Room("414",false,"This is test data for room #414."))
-            data.add(Room("416",true,"This is test data for room #416."))
-            data.add(Room("420A",false,"This is test data for room #420A."))
-            data.add(Room("457B",false,"This is test data for room #457B."))
-            data.add(Room("463",false,"This is test data for room #463."))
-        }
-        else if (floor == 5){
-            data.add(Room("502",false,"This is test data for room #502."))
-            data.add(Room("503",true,"This is test data for room #503."))
-            data.add(Room("504",false,"This is test data for room #504."))
-            data.add(Room("505",true,"This is test data for room #505."))
-            data.add(Room("510",false,"This is test data for room #510."))
-            data.add(Room("511",false,"This is test data for room #511."))
-            data.add(Room("512",false,"This is test data for room #512."))
-        }
-        else{
-            data.add(Room("602",false,"This is test data for room #602."))
-            data.add(Room("603",true,"This is test data for room #603."))
-            data.add(Room("604",false,"This is test data for room #604."))
-            data.add(Room("605",true,"This is test data for room #605."))
-            data.add(Room("610",false,"This is test data for room #610."))
-            data.add(Room("611",false,"This is test data for room #611."))
-            data.add(Room("612",false,"This is test data for room #612."))
-            data.add(Room("613",false,"This is test data for room #613."))
-            data.add(Room("614",false,"This is test data for room #614."))
-            data.add(Room("615",false,"This is test data for room #615."))
-            data.add(Room("616",false,"This is test data for room #616."))
-            data.add(Room("617",false,"This is test data for room #617."))
-            data.add(Room("618",false,"This is test data for room #618."))
-            data.add(Room("619",false,"This is test data for room #619."))
-            data.add(Room("620",false,"This is test data for room #620."))
-            data.add(Room("621",false,"This is test data for room #621."))
-            data.add(Room("651",false,"This is test data for room #651."))
-            data.add(Room("652",false,"This is test data for room #652."))
-            data.add(Room("657A-C",false,"This is test data for room #657A-C."))
-            data.add(Room("659",false,"This is test data for room #659."))
-            data.add(Room("661",false,"This is test data for room #661."))
-            data.add(Room("662",false,"This is test data for room #662."))
-            data.add(Room("663",false,"This is test data for room #663."))
-            data.add(Room("664",false,"This is test data for room #664."))
-            data.add(Room("665",false,"This is test data for room #665."))
-            data.add(Room("666",false,"This is test data for room #666."))
-            data.add(Room("667",false,"This is test data for room #667."))
-            data.add(Room("668",false,"This is test data for room #668."))
-            data.add(Room("669",false,"This is test data for room #669."))
-            data.add(Room("670",false,"This is test data for room #670."))
-            data.add(Room("671",false,"This is test data for room #671."))
-
-
-
-        }
-
+        volleyHttpGet(floor)//check the database for specific floor info
         return data;
+    }
+
+    private fun volleyHttpGet(floor: Int): ArrayList<Room>?{
+        // Instantiate the RequestQueue.
+        val queue = Volley.newRequestQueue(this)
+        val url = "http://www.openstudyuc.xyz/api/floor/" + floor
+        lateinit var responseJson:String
+        //Initialize moshi variables which will allow for easy conversion to and from json
+        val moshi = Moshi.Builder()
+                // ... add your own JsonAdapters and factories ...
+                .add(MoshiJsonListAdaptersFactory())
+                .add(KotlinJsonAdapterFactory())
+                .build()
+        val roomType: Type = newParameterizedType(List::class.java,Room::class.java)
+        val roomAdapter: JsonAdapter<ArrayList<Room>> = moshi.adapter(roomType)
+        var roomData: ArrayList<Room> = arrayListOf()
+
+        // Request a string response from the provided URL.
+        val stringRequest = StringRequest(Request.Method.GET, url,
+                Response.Listener<String> { response ->
+                    // get the object result from the database
+                    responseJson = response
+                    roomData = roomAdapter.fromJson(responseJson)!!//convert the database get request into a usable Kotlin object
+                },
+                Response.ErrorListener { Log.d("Volley HTTP Error: ","That didn't work!" ); responseJson = ""})
+
+        // Add the request to the RequestQueue.
+        queue.add(stringRequest)
+
+
+        return roomData
     }
 
     //Put info in the popup window after clicking on a room
@@ -349,7 +339,7 @@ class MainActivity : AppCompatActivity(),RecyclerViewAdapter.ItemClickListener {
                 .setRequestId("Langsam")
 
                 // Set the circular region of this geofence. (latitude, longitude, radius in meters)
-                .setCircularRegion(39.135266,-84.515419,100000f)
+                .setCircularRegion(39.135266,-84.515419,1000f)
 
                 // Set the expiration duration of the geofence. This geofence gets automatically
                 // removed after this period of time.
