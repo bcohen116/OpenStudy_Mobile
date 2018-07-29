@@ -4,47 +4,33 @@ import android.Manifest
 import android.app.ActionBar
 import android.app.AlertDialog
 import android.app.PendingIntent
-import android.content.BroadcastReceiver
 import android.content.Context
-import android.content.DialogInterface
 import android.content.Intent
 import android.content.pm.PackageManager
 import android.graphics.drawable.Drawable
 import android.location.*
-import android.net.wifi.WifiConfiguration
 import android.support.v7.app.AppCompatActivity
 import android.os.Bundle
 import android.support.v4.app.ActivityCompat
 import android.support.v4.content.ContextCompat
 import android.support.v7.widget.GridLayoutManager
-import android.support.v7.widget.LinearLayoutManager
 import android.support.v7.widget.RecyclerView
 import android.util.Log
 import android.view.Gravity
 import android.view.View
-import java.util.*
 import android.view.LayoutInflater
 import android.widget.*
 import com.android.volley.Request
 import com.android.volley.Response
-import com.android.volley.toolbox.JsonArrayRequest
 import com.android.volley.toolbox.StringRequest
 import com.android.volley.toolbox.Volley
-import com.google.android.gms.common.api.PendingResult
-import com.google.android.gms.common.api.Status
-import com.google.android.gms.gcm.Task
 import com.google.android.gms.location.*
 import com.squareup.moshi.JsonAdapter
 import com.squareup.moshi.Moshi
-import com.squareup.moshi.Types
 import com.squareup.moshi.Types.newParameterizedType
 import com.squareup.moshi.kotlin.reflect.KotlinJsonAdapterFactory
 import kotlinx.android.synthetic.main.room_details_popup.view.*
-import org.json.JSONArray
-import org.json.JSONObject
-import java.io.IOException
 import java.lang.reflect.Type
-import java.security.Permission
 import kotlin.collections.ArrayList
 
 
@@ -94,7 +80,6 @@ class MainActivity : AppCompatActivity(),RecyclerViewAdapter.ItemClickListener {
         roomList.setHasFixedSize(true);
         //Change the room list when changing floors
         floorPicker.setOnCheckedChangeListener{ group, checkedId ->
-            var roomData:ArrayList<Room>
             val selected: RadioButton = findViewById(checkedId)
             for (x in 0..(floorPicker.childCount - 1)){
                 val radioBtn:View = floorPicker.getChildAt(x)
@@ -104,9 +89,7 @@ class MainActivity : AppCompatActivity(),RecyclerViewAdapter.ItemClickListener {
             }
             val selectionIcon: Drawable = this.getDrawable(android.R.drawable.button_onoff_indicator_on)
             selected.setCompoundDrawablesWithIntrinsicBounds(null,null,null,selectionIcon)
-            roomData = checkCurrentFloor(selected)
-            //Populate the list
-            refreshRoomList(roomData)
+            checkCurrentFloor(selected)//finds room data from database and refreshes the room list
         }
         floorPicker.check(R.id.radioButton)//Default to the first Floor of the library
 
@@ -129,21 +112,19 @@ class MainActivity : AppCompatActivity(),RecyclerViewAdapter.ItemClickListener {
         roomList.adapter = adapter
     }
 
-    private fun checkCurrentFloor(selected:RadioButton):ArrayList<Room>{
-        val roomData:ArrayList<Room>;
+    private fun checkCurrentFloor(selected:RadioButton){
         if (selected.id == R.id.radioButton){
             //Floor 4 was selected... retrieve info from database
-            roomData = retrieveData(4)
+            retrieveData(4)
         }
         else if (selected.id == R.id.radioButton2){
             //Floor 5 was selected... retrieve info from database
-            roomData = retrieveData(5)
+            retrieveData(5)
         }
         else{
             //Floor 6 was selected.. retrieve info from database
-            roomData = retrieveData(6)
+            retrieveData(6)
         }
-        return roomData
     }
 
     //Check if the User has logged in before, make them log in if they have not.
@@ -159,13 +140,11 @@ class MainActivity : AppCompatActivity(),RecyclerViewAdapter.ItemClickListener {
     }
 
     //Retrieve the room data from the database to populate the room list and popups
-    private fun retrieveData(floor:Int): ArrayList<Room> {
-        val data:ArrayList<Room> = ArrayList();
-        volleyHttpGet(floor)//check the database for specific floor info
-        return data;
+    private fun retrieveData(floor:Int){
+        volleyHttpGet(floor)!!;
     }
 
-    private fun volleyHttpGet(floor: Int): ArrayList<Room>?{
+    private fun volleyHttpGet(floor: Int){
         // Instantiate the RequestQueue.
         val queue = Volley.newRequestQueue(this)
         val url = "http://www.openstudyuc.xyz/api/floor/" + floor
@@ -186,14 +165,30 @@ class MainActivity : AppCompatActivity(),RecyclerViewAdapter.ItemClickListener {
                     // get the object result from the database
                     responseJson = response
                     roomData = roomAdapter.fromJson(responseJson)!!//convert the database get request into a usable Kotlin object
+                    //Refresh the room list
+                    refreshRoomList(roomData)
                 },
                 Response.ErrorListener { Log.d("Volley HTTP Error: ","That didn't work!" ); responseJson = ""})
 
         // Add the request to the RequestQueue.
         queue.add(stringRequest)
+    }
+    //change a room availability
+    private fun volleyHttpPut(room:Room){
+        // Instantiate the RequestQueue.
+        val queue = Volley.newRequestQueue(this)
+        val url = "http://www.openstudyuc.xyz/api/room/" + room.name + "/" + room.availability
+        lateinit var responseJson:String
 
-
-        return roomData
+        // Request a string response from the provided URL.
+        val stringRequest = StringRequest(Request.Method.GET, url,
+                Response.Listener<String> { response ->
+                    // get the object result from the database
+                    responseJson = response
+                },
+                Response.ErrorListener { Log.d("Volley HTTP Error: ","That didn't work!" ); responseJson = ""})
+        // Add the request to the RequestQueue.
+        queue.add(stringRequest)
     }
 
     //Put info in the popup window after clicking on a room
@@ -213,13 +208,13 @@ class MainActivity : AppCompatActivity(),RecyclerViewAdapter.ItemClickListener {
         //Add in data from database to popup
         val itemName:String = adapter.getItem(position).name//Room Name from database
         val itemAvailable:Boolean = adapter.getItem(position).availability//Availablility from database
-        val itemNotes:String = adapter.getItem(position).notes//Room Notes from database
+//        val itemNotes:String = adapter.getItem(position).notes//Room Notes from database
         val roomName:String = popupView.name.text.toString()
         val availablility:String = popupView.availablility.text.toString()
-        val notes:String = popupView.notes.text.toString()
+//        val notes:String = popupView.notes.text.toString()//notes was not implemented in the database
         popupView.name.text = "%s %s".format(roomName, itemName)
         popupView.availablility.text = "%s %s".format(availablility, itemAvailable)
-        popupView.notes.text = "%s %s".format(notes, itemNotes)
+//        popupView.notes.text = "%s %s".format(notes, itemNotes)//notes was not implemented in the database
         if(itemAvailable)
             popupView.switch1.text = "Take Room"
         else
@@ -232,9 +227,7 @@ class MainActivity : AppCompatActivity(),RecyclerViewAdapter.ItemClickListener {
             popupWindow.dismiss()
             val roomData:ArrayList<Room>;
             val selected:RadioButton = findViewById(floorPicker.checkedRadioButtonId)
-            roomData = checkCurrentFloor(selected)
-            //Populate the list
-            refreshRoomList(roomData)
+            checkCurrentFloor(selected)//retrieves the room data from the database and refreshes the list
         }
 
         //When the take room switch is flipped, this will be triggered
@@ -312,6 +305,7 @@ class MainActivity : AppCompatActivity(),RecyclerViewAdapter.ItemClickListener {
         room.availability = !room.availability
         val availTxt:TextView = popupView.findViewById(R.id.availablility)
         availTxt.text = "Available: " + room.availability
+        volleyHttpPut(room)
         if(room.availability)
             popupView.switch1.text = "Take Room"
         else

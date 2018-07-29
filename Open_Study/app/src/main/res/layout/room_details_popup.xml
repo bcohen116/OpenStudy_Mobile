@@ -36,21 +36,13 @@
         android:textSize="18sp"
         android:textColor="@color/colorWhite"
         android:text="Available: " />
-    <TextView
-        android:id="@+id/notes"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:textSize="18sp"
-        android:layout_below="@+id/availablility"
-        android:padding="25sp"
-        android:textColor="@color/colorWhite"
-        android:text="Room Notes: " />
+
 
     <Switch
         android:id="@+id/switch1"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_below="@+id/notes"
+        android:layout_below="@+id/availablility"
         android:layout_centerHorizontal="true"
         android:switchPadding="15dp"
         android:textColor="@color/colorWhite"
