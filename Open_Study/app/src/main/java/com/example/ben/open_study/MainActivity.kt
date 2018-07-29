@@ -4,8 +4,10 @@ import android.Manifest
 import android.app.ActionBar
 import android.app.AlertDialog
 import android.app.PendingIntent
+import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
+import android.content.IntentFilter
 import android.content.pm.PackageManager
 import android.graphics.drawable.Drawable
 import android.location.*
@@ -24,6 +26,9 @@ import com.android.volley.Request
 import com.android.volley.Response
 import com.android.volley.toolbox.StringRequest
 import com.android.volley.toolbox.Volley
+import com.example.ben.open_study.MainActivity.contextCompanion.globalPopupView
+import com.example.ben.open_study.MainActivity.contextCompanion.mContext
+import com.google.android.gms.internal.zzatk.onReceive
 import com.google.android.gms.location.*
 import com.squareup.moshi.JsonAdapter
 import com.squareup.moshi.Moshi
@@ -36,15 +41,24 @@ import kotlin.collections.ArrayList
 
 class MainActivity : AppCompatActivity(),RecyclerViewAdapter.ItemClickListener {
 
-    lateinit var adapter:RecyclerViewAdapter
-    lateinit var geofencingClient: GeofencingClient
+
+
     lateinit var geofences:ArrayList<Geofence>
     lateinit var floorPicker:RadioGroup
     lateinit var roomList:RecyclerView
+    object contextCompanion{
+        lateinit var mContext:Context
+        lateinit var geofencingClient: GeofencingClient
+        lateinit var adapter:RecyclerViewAdapter
+        //the following two variables are used for tracking location settings
+        var globalPosition:Int = 0
+        lateinit var globalPopupView:View
+    }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
+        mContext = this
 
         //Initialize variables
         val PREFS_FILENAME = "com.ben.openstudy.login.prefs"
@@ -70,7 +84,7 @@ class MainActivity : AppCompatActivity(),RecyclerViewAdapter.ItemClickListener {
         checkLogin()//Check if the User has logged in before
 
         //Init the location services
-        geofencingClient = LocationServices.getGeofencingClient(this)
+        MainActivity.contextCompanion.geofencingClient = LocationServices.getGeofencingClient(this)
         ActivityCompat.requestPermissions(this@MainActivity, arrayOf(Manifest.permission.ACCESS_FINE_LOCATION, Manifest.permission.ACCESS_COARSE_LOCATION), 100)
         geofences = createGeofence()
 
@@ -107,9 +121,9 @@ class MainActivity : AppCompatActivity(),RecyclerViewAdapter.ItemClickListener {
     }
     private fun refreshRoomList(roomData:ArrayList<Room>){
         //Populate the list
-        adapter = RecyclerViewAdapter(this,roomData)
-        adapter.setClickListener(this)
-        roomList.adapter = adapter
+        MainActivity.contextCompanion.adapter = RecyclerViewAdapter(this,roomData)
+        MainActivity.contextCompanion.adapter.setClickListener(this)
+        roomList.adapter = MainActivity.contextCompanion.adapter
     }
 
     private fun checkCurrentFloor(selected:RadioButton){
@@ -174,26 +188,28 @@ class MainActivity : AppCompatActivity(),RecyclerViewAdapter.ItemClickListener {
         queue.add(stringRequest)
     }
     //change a room availability
-    private fun volleyHttpPut(room:Room){
-        // Instantiate the RequestQueue.
-        val queue = Volley.newRequestQueue(this)
-        val url = "http://www.openstudyuc.xyz/api/room/" + room.name + "/" + room.availability
-        lateinit var responseJson:String
+    object volleyPut{
+        @JvmStatic fun volleyHttpPut(room:Room){
+            // Instantiate the RequestQueue.
+            val queue = Volley.newRequestQueue(MainActivity.contextCompanion.mContext)
+            val url = "http://www.openstudyuc.xyz/api/room/" + room.name + "/" + room.availability
+            lateinit var responseJson:String
 
-        // Request a string response from the provided URL.
-        val stringRequest = StringRequest(Request.Method.GET, url,
-                Response.Listener<String> { response ->
-                    // get the object result from the database
-                    responseJson = response
-                },
-                Response.ErrorListener { Log.d("Volley HTTP Error: ","That didn't work!" ); responseJson = ""})
-        // Add the request to the RequestQueue.
-        queue.add(stringRequest)
+            // Request a string response from the provided URL.
+            val stringRequest = StringRequest(Request.Method.GET, url,
+                    Response.Listener<String> { response ->
+                        // get the object result from the database
+                        responseJson = response
+                    },
+                    Response.ErrorListener { Log.d("Volley HTTP Error: ","That didn't work!" ); responseJson = ""})
+            // Add the request to the RequestQueue.
+            queue.add(stringRequest)
+        }
     }
 
     //Put info in the popup window after clicking on a room
     override fun onItemClick(view: View, position: Int) {
-        Log.i("Info: ", adapter.getItem(position).name + " was clicked...")
+        Log.i("Info: ", MainActivity.contextCompanion.adapter.getItem(position).name + " was clicked...")
 
 
         //Load in popup window
@@ -206,9 +222,9 @@ class MainActivity : AppCompatActivity(),RecyclerViewAdapter.ItemClickListener {
         )
 
         //Add in data from database to popup
-        val itemName:String = adapter.getItem(position).name//Room Name from database
-        val itemAvailable:Boolean = adapter.getItem(position).availability//Availablility from database
-//        val itemNotes:String = adapter.getItem(position).notes//Room Notes from database
+        val itemName:String = MainActivity.contextCompanion.adapter.getItem(position).name//Room Name from database
+        val itemAvailable:Boolean = MainActivity.contextCompanion.adapter.getItem(position).availability//Availablility from database
+//        val itemNotes:String = MainActivity.contextCompanion.adapter.getItem(position).notes//Room Notes from database
         val roomName:String = popupView.name.text.toString()
         val availablility:String = popupView.availablility.text.toString()
 //        val notes:String = popupView.notes.text.toString()//notes was not implemented in the database
@@ -233,21 +249,21 @@ class MainActivity : AppCompatActivity(),RecyclerViewAdapter.ItemClickListener {
         //When the take room switch is flipped, this will be triggered
         val roomSwitch:Switch = popupView.findViewById(R.id.switch1)
         roomSwitch.setOnClickListener {
-            if(checkLocation()){
-                modifyRoom(adapter.getItem(position),popupView)
-            }
+            MainActivity.contextCompanion.globalPosition = position
+            MainActivity.contextCompanion.globalPopupView = popupView
+            checkLocation()
         }
 
         popupWindow.showAtLocation(findViewById(R.id.roomListLayout),Gravity.CENTER,0,0)
     }
 
-    private fun checkLocation() : Boolean{
+    private fun checkLocation(){
         //Check if the user allowed location permission and has it turned on
         if (ContextCompat.checkSelfPermission(this,Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED &&
                 ContextCompat.checkSelfPermission(this,Manifest.permission.ACCESS_COARSE_LOCATION) == PackageManager.PERMISSION_GRANTED){
             if(checkLocationSetting()){
                 //turn on location tracking to see if the user is close to the library in order to allow them to make changes to a room
-                val result: com.google.android.gms.tasks.Task<Void>? = geofencingClient?.addGeofences(getGeofencingRequest(), geofencePendingIntent)?.run {
+                val result: com.google.android.gms.tasks.Task<Void>? = MainActivity.contextCompanion.geofencingClient?.addGeofences(getGeofencingRequest(), MainActivity.pendingGeoIntent.geofencePendingIntent)?.run {
                     addOnSuccessListener {
                         // Geofences added
                         // ...
@@ -265,11 +281,11 @@ class MainActivity : AppCompatActivity(),RecyclerViewAdapter.ItemClickListener {
                 }
                 if (result?.isSuccessful == true){
                     Log.d("GeofenceClient: ", "Location Found.....")
-                    return true
+//                    return true
                 }
                 else{
                     Log.e("GeofenceClient: ", "Location Lost...")
-                    return false
+//                    return false
                 }
             }
             else{
@@ -280,19 +296,19 @@ class MainActivity : AppCompatActivity(),RecyclerViewAdapter.ItemClickListener {
             ActivityCompat.requestPermissions(this@MainActivity, arrayOf(Manifest.permission.ACCESS_FINE_LOCATION, Manifest.permission.ACCESS_COARSE_LOCATION), 100)
         }
         //Close the location tracking to save battery, in this case, something failed so it should stop searching
-        geofencingClient?.removeGeofences(geofencePendingIntent)?.run {
-            addOnSuccessListener {
-                // Geofences removed
-                // ...
-                Log.d("GeofenceClient: ", "Geofence Closed...")
-            }
-            addOnFailureListener {
-                // Failed to remove geofences
-                // ...
-                Log.e("GeofenceClient: ", "Geofence FAILED to close...")
-            }
-        }
-        return false
+//        geofencingClient?.removeGeofences(MainActivity.pendingGeoIntent.geofencePendingIntent)?.run {
+//            addOnSuccessListener {
+//                // Geofences removed
+//                // ...
+//                Log.d("GeofenceClient: ", "Geofence Closed...")
+//            }
+//            addOnFailureListener {
+//                // Failed to remove geofences
+//                // ...
+//                Log.e("GeofenceClient: ", "Geofence FAILED to close...")
+//            }
+//        }
+//        return false
     }
     //Check if the location setting on the phone is turned on
     private fun checkLocationSetting(): Boolean{
@@ -301,27 +317,18 @@ class MainActivity : AppCompatActivity(),RecyclerViewAdapter.ItemClickListener {
         return locationManager.isProviderEnabled(LocationManager.GPS_PROVIDER) || locationManager.isProviderEnabled(LocationManager.NETWORK_PROVIDER)
     }
     //change the availability of a room
-    private fun modifyRoom(room:Room,popupView:View){
-        room.availability = !room.availability
-        val availTxt:TextView = popupView.findViewById(R.id.availablility)
-        availTxt.text = "Available: " + room.availability
-        volleyHttpPut(room)
-        if(room.availability)
+    object modifyRoom {
+        @JvmStatic fun modifyRoom(room: Room, popupView: View) {
+            room.availability = !room.availability
+            val availTxt: TextView = popupView.findViewById(R.id.availablility)
+            availTxt.text = "Available: " + room.availability
+            MainActivity.volleyPut.volleyHttpPut(room)
+            if(room.availability)
             popupView.switch1.text = "Take Room"
-        else
+            else
             popupView.switch1.text = "I'm done with Room"
-        //Close the location tracking to save battery
-        geofencingClient?.removeGeofences(geofencePendingIntent)?.run {
-            addOnSuccessListener {
-                // Geofences removed
-                // ...
-                Log.d("GeofenceClient: ", "Geofence Closed...")
-            }
-            addOnFailureListener {
-                // Failed to remove geofences
-                // ...
-                Log.e("GeofenceClient: ", "Geofence FAILED to close...")
-            }
+            //Close the location tracking to save battery
+            MainActivity.contextCompanion.geofencingClient?.removeGeofences(MainActivity.pendingGeoIntent.geofencePendingIntent)
         }
     }
     //create the marker for the library location
@@ -347,7 +354,7 @@ class MainActivity : AppCompatActivity(),RecyclerViewAdapter.ItemClickListener {
                 .build())
         return geofenceList
     }
-    //one of multiple methods used to retreive user location
+    //one of multiple methods used to retrieve user location
     private fun getGeofencingRequest(): GeofencingRequest {
         return GeofencingRequest.Builder().apply {
             setInitialTrigger(GeofencingRequest.INITIAL_TRIGGER_ENTER)
@@ -355,12 +362,15 @@ class MainActivity : AppCompatActivity(),RecyclerViewAdapter.ItemClickListener {
         }.build()
     }
     //one of multiple methods used to retreive user location
-    private val geofencePendingIntent: PendingIntent by lazy {
-        val intent = Intent(this, GeofenceTransitionsIntentService::class.java)
-        // We use FLAG_UPDATE_CURRENT so that we get the same pending intent back when calling
-        // addGeofences() and removeGeofences().
-        PendingIntent.getService(this, 0, intent, PendingIntent.FLAG_UPDATE_CURRENT)
+    object pendingGeoIntent{
+        @JvmStatic val geofencePendingIntent: PendingIntent by lazy {
+            val intent = Intent(MainActivity.contextCompanion.mContext, GeofenceTransitionsIntentService::class.java)
+            // We use FLAG_UPDATE_CURRENT so that we get the same pending intent back when calling
+            // addGeofences() and removeGeofences().
+            PendingIntent.getService(MainActivity.contextCompanion.mContext, 0, intent, PendingIntent.FLAG_UPDATE_CURRENT)
+        }
     }
+
 
     //Takes the user to the settings page if they did not have location turned on
     private fun buildAlertMessageNoGps() {
@@ -380,6 +390,7 @@ class MainActivity : AppCompatActivity(),RecyclerViewAdapter.ItemClickListener {
     //used for location notifications
     companion object {
         fun makeNotificationIntent(geofenceService: Context): Intent {
+            MainActivity.modifyRoom.modifyRoom(MainActivity.contextCompanion.adapter.getItem(MainActivity.contextCompanion.globalPosition),MainActivity.contextCompanion.globalPopupView)
             return Intent(geofenceService, MainActivity::class.java)
         }
     }
