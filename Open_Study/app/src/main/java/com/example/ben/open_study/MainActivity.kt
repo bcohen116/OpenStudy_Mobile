@@ -2,6 +2,7 @@ package com.example.ben.open_study
 
 import android.Manifest
 import android.app.ActionBar
+import android.app.Activity
 import android.app.AlertDialog
 import android.app.PendingIntent
 import android.content.BroadcastReceiver
@@ -13,6 +14,8 @@ import android.graphics.drawable.Drawable
 import android.location.*
 import android.support.v7.app.AppCompatActivity
 import android.os.Bundle
+import android.os.Handler
+import android.os.Looper
 import android.support.v4.app.ActivityCompat
 import android.support.v4.content.ContextCompat
 import android.support.v7.widget.GridLayoutManager
@@ -318,17 +321,26 @@ class MainActivity : AppCompatActivity(),RecyclerViewAdapter.ItemClickListener {
     }
     //change the availability of a room
     object modifyRoom {
+        val handler:Handler = Handler()
         @JvmStatic fun modifyRoom(room: Room, popupView: View) {
             room.availability = !room.availability
-            val availTxt: TextView = popupView.findViewById(R.id.availablility)
-            availTxt.text = "Available: " + room.availability
-            MainActivity.volleyPut.volleyHttpPut(room)
-            if(room.availability)
-            popupView.switch1.text = "Take Room"
-            else
-            popupView.switch1.text = "I'm done with Room"
+            Handler(Looper.getMainLooper()).post {
+
+                    val availTxt: TextView = popupView.findViewById(R.id.availablility)
+                    availTxt.text = "Available: ${room.availability}"
+                    MainActivity.volleyPut.volleyHttpPut(room)
+                    if(room.availability)
+                        popupView.switch1.text = "Take Room"
+                    else
+                        popupView.switch1.text = "I'm done with Room"
+
+            }
+
             //Close the location tracking to save battery
             MainActivity.contextCompanion.geofencingClient?.removeGeofences(MainActivity.pendingGeoIntent.geofencePendingIntent)
+        }
+        private fun runOnUiThread(runnable:Runnable){
+            handler.post(runnable)
         }
     }
     //create the marker for the library location
