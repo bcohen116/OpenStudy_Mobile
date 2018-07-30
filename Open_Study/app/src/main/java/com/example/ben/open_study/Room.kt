@@ -12,7 +12,7 @@ class Room constructor(name:String,availability:Boolean){
 //    var notes:String//notes was not implemented in the database
     init{
         this.name = name
-        this.availability = availability
+        this.availability = !availability
 //        this.notes = notes//notes was not implemented in the database
     }
 

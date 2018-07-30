@@ -330,7 +330,7 @@ class MainActivity : AppCompatActivity(),RecyclerViewAdapter.ItemClickListener {
                     availTxt.text = "Available: ${room.availability}"
                     MainActivity.volleyPut.volleyHttpPut(room)
                     if(room.availability)
-                        popupView.switch1.text = "Take Room"
+                        popupView.switch1.text = "Check in to Room"
                     else
                         popupView.switch1.text = "I'm done with Room"
 
@@ -352,7 +352,7 @@ class MainActivity : AppCompatActivity(),RecyclerViewAdapter.ItemClickListener {
                 .setRequestId("Langsam")
 
                 // Set the circular region of this geofence. (latitude, longitude, radius in meters)
-                .setCircularRegion(39.135266,-84.515419,1000f)
+                .setCircularRegion(39.135266,-84.515419,100000f)
 
                 // Set the expiration duration of the geofence. This geofence gets automatically
                 // removed after this period of time.
