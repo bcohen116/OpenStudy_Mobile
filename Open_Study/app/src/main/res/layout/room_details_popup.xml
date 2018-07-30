@@ -35,7 +35,7 @@
         android:padding="25sp"
         android:textSize="18sp"
         android:textColor="@color/colorWhite"
-        android:text="Available: " />
+        android:text="Occupied: " />
     <TextView
         android:id="@+id/notes"
         android:layout_width="wrap_content"

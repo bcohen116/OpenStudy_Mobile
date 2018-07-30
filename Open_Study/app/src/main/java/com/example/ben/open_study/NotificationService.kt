@@ -111,10 +111,12 @@ class NotificationService : Service() {
         editor.putString("lastCheckedData$floor", currentCheckedDataStr)
         editor.apply()
 
+        var changes:Int = 0
         //Compare the two objects for changes
         for (x in 0..data.size - 1){
-            if(data.get(x).availability != previousCheckedData.get(x).availability && data.get(x).availability && !previousData.equals("")){
+            if(!previousData.equals("") && data.get(x).occupied != previousCheckedData.get(x).occupied && data.get(x).occupied){
                 //data changed and room is now available, send user notification
+                changes += 1
                 val notificationManager: NotificationManager = getSystemService(
                         Context.NOTIFICATION_SERVICE) as NotificationManager
 
@@ -125,14 +127,14 @@ class NotificationService : Service() {
                 mBuilder.setContentTitle("Room Available")
                 mBuilder.setContentText("Room " + data.get(x).name + " was recently opened.")
                 mBuilder.setChannelId("com.example.ben.open_study")
-                mBuilder.setPriority(Notification.PRIORITY_MAX)
+                mBuilder.priority = NotificationCompat.PRIORITY_MAX
 
                 val notificationIntent:Intent = Intent(this,MainActivity::class.java)
                 notificationIntent.setFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_SINGLE_TOP)
                 val pendingIntent:PendingIntent = PendingIntent.getActivity(this,0,notificationIntent,PendingIntent.FLAG_UPDATE_CURRENT)
                 mBuilder.setContentIntent(pendingIntent)
 
-                notificationManager.notify(1,mBuilder.build())
+                notificationManager.notify(x,mBuilder.build())
             }
         }
     }

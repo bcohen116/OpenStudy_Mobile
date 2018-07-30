@@ -49,7 +49,7 @@ class MainActivity : AppCompatActivity(),RecyclerViewAdapter.ItemClickListener {
     lateinit var geofences:ArrayList<Geofence>
     lateinit var floorPicker:RadioGroup
     lateinit var roomList:RecyclerView
-    object contextCompanion{
+    object contextCompanion{//Need this global object in order to use info after location service finishes its thing
         lateinit var mContext:Context
         lateinit var geofencingClient: GeofencingClient
         lateinit var adapter:RecyclerViewAdapter
@@ -191,11 +191,12 @@ class MainActivity : AppCompatActivity(),RecyclerViewAdapter.ItemClickListener {
         queue.add(stringRequest)
     }
     //change a room availability
+    //Need this global object in order to use info after location service finishes its thing
     object volleyPut{
         @JvmStatic fun volleyHttpPut(room:Room){
             // Instantiate the RequestQueue.
             val queue = Volley.newRequestQueue(MainActivity.contextCompanion.mContext)
-            val url = "http://www.openstudyuc.xyz/api/room/" + room.name + "/" + room.availability
+            val url = "http://www.openstudyuc.xyz/api/room/" + room.name + "/" + room.occupied
             lateinit var responseJson:String
 
             // Request a string response from the provided URL.
@@ -226,7 +227,7 @@ class MainActivity : AppCompatActivity(),RecyclerViewAdapter.ItemClickListener {
 
         //Add in data from database to popup
         val itemName:String = MainActivity.contextCompanion.adapter.getItem(position).name//Room Name from database
-        val itemAvailable:Boolean = MainActivity.contextCompanion.adapter.getItem(position).availability//Availablility from database
+        val itemAvailable:Boolean = MainActivity.contextCompanion.adapter.getItem(position).occupied//Availablility from database
 //        val itemNotes:String = MainActivity.contextCompanion.adapter.getItem(position).notes//Room Notes from database
         val roomName:String = popupView.name.text.toString()
         val availablility:String = popupView.availablility.text.toString()
@@ -284,11 +285,9 @@ class MainActivity : AppCompatActivity(),RecyclerViewAdapter.ItemClickListener {
                 }
                 if (result?.isSuccessful == true){
                     Log.d("GeofenceClient: ", "Location Found.....")
-//                    return true
                 }
                 else{
                     Log.e("GeofenceClient: ", "Location Lost...")
-//                    return false
                 }
             }
             else{
@@ -298,20 +297,6 @@ class MainActivity : AppCompatActivity(),RecyclerViewAdapter.ItemClickListener {
         else{
             ActivityCompat.requestPermissions(this@MainActivity, arrayOf(Manifest.permission.ACCESS_FINE_LOCATION, Manifest.permission.ACCESS_COARSE_LOCATION), 100)
         }
-        //Close the location tracking to save battery, in this case, something failed so it should stop searching
-//        geofencingClient?.removeGeofences(MainActivity.pendingGeoIntent.geofencePendingIntent)?.run {
-//            addOnSuccessListener {
-//                // Geofences removed
-//                // ...
-//                Log.d("GeofenceClient: ", "Geofence Closed...")
-//            }
-//            addOnFailureListener {
-//                // Failed to remove geofences
-//                // ...
-//                Log.e("GeofenceClient: ", "Geofence FAILED to close...")
-//            }
-//        }
-//        return false
     }
     //Check if the location setting on the phone is turned on
     private fun checkLocationSetting(): Boolean{
@@ -323,13 +308,13 @@ class MainActivity : AppCompatActivity(),RecyclerViewAdapter.ItemClickListener {
     object modifyRoom {
         val handler:Handler = Handler()
         @JvmStatic fun modifyRoom(room: Room, popupView: View) {
-            room.availability = !room.availability
+            room.occupied = !room.occupied
             Handler(Looper.getMainLooper()).post {
 
                     val availTxt: TextView = popupView.findViewById(R.id.availablility)
-                    availTxt.text = "Available: ${room.availability}"
+                    availTxt.text = "Occupied: ${room.occupied}"
                     MainActivity.volleyPut.volleyHttpPut(room)
-                    if(room.availability)
+                    if(!room.occupied)
                         popupView.switch1.text = "Check in to Room"
                     else
                         popupView.switch1.text = "I'm done with Room"
@@ -400,6 +385,7 @@ class MainActivity : AppCompatActivity(),RecyclerViewAdapter.ItemClickListener {
         alert.show();
     }
     //used for location notifications
+    //Need this global object in order to use info after location service finishes its thing
     companion object {
         fun makeNotificationIntent(geofenceService: Context): Intent {
             MainActivity.modifyRoom.modifyRoom(MainActivity.contextCompanion.adapter.getItem(MainActivity.contextCompanion.globalPosition),MainActivity.contextCompanion.globalPopupView)
