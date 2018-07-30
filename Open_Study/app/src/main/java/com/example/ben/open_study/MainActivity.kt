@@ -238,7 +238,7 @@ class MainActivity : AppCompatActivity(),RecyclerViewAdapter.ItemClickListener {
         popupView.name.text = "%s %s".format(roomName, itemName)
         popupView.availablility.text = "%s %s".format(availablility, itemAvailable)
 //        popupView.notes.text = "%s %s".format(notes, itemNotes)//notes was not implemented in the database
-        if(itemAvailable)
+        if(!itemAvailable)
             popupView.switch1.text = "Take Room"
         else
             popupView.switch1.text = "I'm done with Room"

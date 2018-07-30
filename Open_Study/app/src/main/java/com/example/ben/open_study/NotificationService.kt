@@ -114,7 +114,7 @@ class NotificationService : Service() {
         var changes:Int = 0
         //Compare the two objects for changes
         for (x in 0..data.size - 1){
-            if(!previousData.equals("") && data.get(x).occupied != previousCheckedData.get(x).occupied && data.get(x).occupied){
+            if(!previousData.equals("") && data.get(x).occupied != previousCheckedData.get(x).occupied && !data.get(x).occupied){
                 //data changed and room is now available, send user notification
                 changes += 1
                 val notificationManager: NotificationManager = getSystemService(

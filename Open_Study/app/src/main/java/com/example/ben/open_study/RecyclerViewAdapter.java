@@ -40,7 +40,7 @@ public class RecyclerViewAdapter extends RecyclerView.Adapter<RecyclerViewAdapte
         holder.myTextView.setText(mData.get(position).getName());
         //Set the room list images
         Drawable roomAvailableImg;
-        if (mData.get(position).getOccupied()){
+        if (!mData.get(position).getOccupied()){
             //room is available, change image to display that info
             roomAvailableImg = ContextCompat.getDrawable(mContext,R.drawable.baseline_meeting_room_green_48dp);
         }
