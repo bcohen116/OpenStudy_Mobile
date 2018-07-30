@@ -123,6 +123,9 @@ class MainActivity : AppCompatActivity(),RecyclerViewAdapter.ItemClickListener {
         }
     }
     private fun refreshRoomList(roomData:ArrayList<Room>){
+        //sort the array
+        fun selector(r:Room):String = r.name
+        roomData.sortBy { selector(it) }
         //Populate the list
         MainActivity.contextCompanion.adapter = RecyclerViewAdapter(this,roomData)
         MainActivity.contextCompanion.adapter.setClickListener(this)
